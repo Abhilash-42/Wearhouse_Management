@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const data = require('./data');
 const { allocateOrder, getReorderRecommendations, calculatePriorityScore } = require('./allocation');
@@ -223,23 +224,35 @@ app.get('/api/analytics', (req, res) => {
   const bottleneckProductId = Object.keys(productExceptionCounts).sort((a,b) => productExceptionCounts[b] - productExceptionCounts[a])[0];
   const bottleneckProduct = bottleneckProductId ? findProduct(parseInt(bottleneckProductId)) : null;
   
-  res.json({
-    totalOrders,
-    pendingOrders,
-    completedOrders,
-    lowStockCount: lowStockItems.length,
-    lowStockItems,
-    unresolvedExceptions,
-    avgProcessingHours: Math.round(avgProcessingHours * 10) / 10,
-    bottleneckProduct,
-    bottleneckExceptionCount: bottleneckProductId ? productExceptionCounts[bottleneckProductId] : 0
-  });
+ res.json({
+  totalOrders,
+  pendingOrders,
+  completedOrders,
+  lowStockCount: lowStockItems.length,
+  lowStockItems,
+  unresolvedExceptions,
+  avgProcessingHours: Math.round(avgProcessingHours * 10) / 10,
+  bottleneckProduct,
+  bottleneckExceptionCount: bottleneckProductId ? productExceptionCounts[bottleneckProductId] : 0
+});
+
+// Serve React frontend in production
+const clientPath = path.join(__dirname, '../client/dist');
+
+app.use(express.static(clientPath));
+
+// React Router fallback
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(clientPath, 'index.html'));
+  }
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
-  // Initial priority score calculation for seed orders
+
   data.orders.forEach(order => {
     order.priorityScore = calculatePriorityScore(order);
   });
