@@ -235,7 +235,7 @@ app.get('/api/analytics', (req, res) => {
   bottleneckProduct,
   bottleneckExceptionCount: bottleneckProductId ? productExceptionCounts[bottleneckProductId] : 0
 });
-
+});
 // Serve React frontend in production
 const clientPath = path.join(__dirname, '../client/dist');
 
